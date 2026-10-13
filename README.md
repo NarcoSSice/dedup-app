@@ -158,6 +158,7 @@ Returns duplicate groups for the request's images. While images are still being 
 
 - Duplicates are searched among the images of this request and all other images in the store at the time of the call, including ones uploaded after this request. So the result of an older request can grow when new copies arrive.
 - If two images of the same request match each other, the pair is shown once, under the first of them.
+  An image that already appears in an earlier group gets no group of its own, but its matches may still be listed in other groups. So the number of groups does not change monotonically with the threshold. Example: a copy scoring 0.926 with the original sits in the original's group at 0.92. At 0.93 it drops out of that group, but it still matches other copies at up to 0.949, so it gets its own group. At 0.95 it matches nothing and disappears. Merging the groups into connected components would avoid this, but members would then show scores below the threshold, which breaks "every match is above the threshold".
 - `score` is the cosine similarity of the two embeddings (1.0 means identical).
 - `failed` lists accepted files that the worker could not decode.
 - If nothing is found, `groups` is empty and `message` is `"No duplicates found"`.

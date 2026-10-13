@@ -46,7 +46,7 @@ export function DuplicateGroupCard({ group, requestId }: Props) {
                       to={`/requests/${dup.source_request_id}`}
                       className="underline-offset-2 hover:underline"
                     >
-                      From an earlier upload
+                      From another upload
                     </Link>
                   )}
                 </p>
