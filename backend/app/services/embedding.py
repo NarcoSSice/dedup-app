@@ -1,0 +1,118 @@
+import asyncio
+import os
+from concurrent.futures import ThreadPoolExecutor
+
+from PIL import Image
+
+from core.enums.image import ImageStatus
+from core.logger import logger
+from core.settings import settings
+from db.mongo import ensure_indexes
+from db.repositories.container import RepositoryContainer
+from db.repositories.vector import vector_repository
+from ml.embedder import embedder
+from utils.image_utils import decode_image, make_thumbnail
+from utils.storage import storage
+
+
+class EmbeddingService:
+    """Turns queued images into vectors. Run by workers, never by the API."""
+
+    def __init__(self):
+        # Pillow decode releases the GIL, so threads parallelize it
+        self.decode_pool = ThreadPoolExecutor(max_workers=os.cpu_count() or 4)
+
+    async def setup(self) -> None:
+        await ensure_indexes()
+        # also loads the model before the first batch
+        await vector_repository.ensure_collection(embedder.dim)
+
+    async def _load(self, sha256: str) -> Image.Image:
+        """Fetch original, decode at model resolution, store the thumbnail."""
+        data = await storage.get(storage.original_key(sha256))
+        if data is None:
+            raise ValueError("original_missing")
+        min_side = max(settings.model.INPUT_SIZE, settings.upload.THUMB_SIZE)
+        loop = asyncio.get_running_loop()
+        img = await loop.run_in_executor(self.decode_pool, decode_image, data, min_side)
+        thumbnail = await loop.run_in_executor(
+            self.decode_pool, make_thumbnail, img, settings.upload.THUMB_SIZE
+        )
+        await storage.put(storage.thumbnail_key(sha256), thumbnail)
+        return img
+
+    async def _embed_new(
+        self, hashes: list[str]
+    ) -> tuple[dict[str, list[float]], dict[str, str]]:
+        """-> (vectors by sha256, errors by sha256).
+        One bad file never fails the batch."""
+        results = await asyncio.gather(
+            *(self._load(sha) for sha in hashes), return_exceptions=True
+        )
+        errors, loaded = {}, []
+        for sha, result in zip(hashes, results, strict=True):
+            if isinstance(result, Exception):
+                logger.warning("decode failed for %s: %s", sha, result)
+                errors[sha] = (str(result) or type(result).__name__)[:255]
+            else:
+                loaded.append((sha, result))
+        if not loaded:
+            return {}, errors
+
+        vectors = await asyncio.to_thread(embedder.embed, [img for _, img in loaded])
+        embedded = {
+            sha: v.tolist() for (sha, _), v in zip(loaded, vectors, strict=True)
+        }
+        return embedded, errors
+
+    async def process_batch(self, repos: RepositoryContainer) -> int:
+        """Embed one batch of queued images. Returns how many were claimed."""
+        claim, images = await repos.images.claim_batch(
+            settings.worker.BATCH_SIZE, settings.worker.LEASE_SECONDS
+        )
+        if not images:
+            return 0
+
+        # exact byte copies reuse the stored vector instead of running the model
+        hashes = {img.sha256 for img in images}
+        known_ids = await repos.images.get_done_ids_by_hash(hashes)
+        stored = await vector_repository.get_vectors(list(known_ids.values()))
+        vectors = {sha: stored[pk] for sha, pk in known_ids.items() if pk in stored}
+
+        new_vectors, errors = await self._embed_new(sorted(hashes - vectors.keys()))
+        vectors |= new_vectors
+
+        embedded = [img for img in images if img.sha256 in vectors]
+        if embedded:
+            await vector_repository.upsert(
+                ids=[img.id for img in embedded],
+                vectors=[vectors[img.sha256] for img in embedded],
+                payloads=[
+                    {
+                        "uploaded_at": img.created_at.timestamp(),
+                        "request_id": img.request_id,
+                        "filename": img.filename,
+                    }
+                    for img in embedded
+                ],
+            )
+        await repos.images.finish_batch(
+            claim,
+            [
+                {
+                    "id": img.id,
+                    "status": ImageStatus.done
+                    if img.sha256 in vectors
+                    else ImageStatus.failed,
+                    "error": errors.get(img.sha256),
+                }
+                for img in images
+            ],
+        )
+        logger.info(
+            "batch: %d images, %d through the model, %d failed",
+            len(images),
+            len(new_vectors),
+            len(images) - len(embedded),
+        )
+        return len(images)

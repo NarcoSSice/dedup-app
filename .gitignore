@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+backend/dedup_model/
+.idea/
+.junie/
+.DS_Store
+node_modules/
+dist/
+.env
+backend/data/
+backend/poetry.toml

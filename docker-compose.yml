@@ -1,0 +1,52 @@
+name: dedup-app
+
+x-backend: &backend
+  image: dedup-backend
+  restart: unless-stopped
+  volumes: [images:/data/images]  # shared by api and workers
+  environment: &backend-env
+    MONGO_URL: mongodb://mongo:27017
+    MONGO_DB: ${MONGO_DB:-dedup}
+    QDRANT_URL: http://qdrant:6333
+    STORAGE_DIR: /data/images
+    DUPLICATE_THRESHOLD: ${DUPLICATE_THRESHOLD:-0.75}
+  depends_on:
+    mongo: { condition: service_healthy }
+    qdrant: { condition: service_started }
+
+services:
+  api:
+    <<: *backend
+    build: ./backend  # worker reuses this image
+    environment:
+      <<: *backend-env
+      WORKERS: ${API_WORKERS:-2}
+    ports: ["8000:8000"]
+
+  worker:
+    <<: *backend
+    pull_policy: never
+    command: ["python", "app/worker.py"]
+    environment:
+      <<: *backend-env
+      # keep TORCH_THREADS x replicas <= CPU cores: docker compose up --scale worker=N
+      TORCH_THREADS: ${TORCH_THREADS:-4}
+      WORKER_BATCH_SIZE: ${WORKER_BATCH_SIZE:-32}
+
+  mongo:
+    image: mongo:8.0.15
+    ports: ["27017:27017"]  # for running tests from the host
+    volumes: [mongo:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 2s
+      retries: 30
+
+  qdrant:
+    image: qdrant/qdrant:v1.19.2
+    volumes: [qdrant:/qdrant/storage]
+
+volumes:
+  images:
+  mongo:
+  qdrant:

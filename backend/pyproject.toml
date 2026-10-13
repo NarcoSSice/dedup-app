@@ -1,0 +1,62 @@
+[project]
+name = "dedup-backend"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Kostiantyn Borkivets",email = "borkoveck6@gmail.com"}
+]
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "fastapi (>=0.143.0,<0.144.0)",
+    "uvicorn (>=0.54.0,<0.55.0)",
+    "python-multipart (>=0.0.32,<0.0.33)",
+    "pillow (>=12.3.0,<13.0.0)",
+    "qdrant-client (>=1.19.1,<2.0.0)",
+    "numpy (>=2.0,<3)",
+    "torch (==2.14.1)",
+    "pydantic-settings (>=2.15.0,<3.0.0)",
+    "pymongo (>=4.18.3,<5.0.0)",
+]
+
+
+[tool.poetry]
+package-mode = false
+
+# CPU-only torch wheels on Linux (Docker); macOS wheels on PyPI are CPU/MPS already
+[tool.poetry.dependencies]
+torch = [
+    { version = "2.14.1", source = "pytorch-cpu", markers = "sys_platform == 'linux'" },
+    { version = "2.14.1", source = "pypi", markers = "sys_platform == 'darwin'" },
+]
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "pytest-asyncio (>=1.4.0,<2.0.0)",
+    "ruff (>=0.17.0,<0.18.0)",
+    "pre-commit (>=4.6.2,<5.0.0)",
+]
+
+[tool.ruff]
+src = ["app"]
+extend-exclude = ["app/db/migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008"]  # FastAPI: Depends()/File() in argument defaults
+
+[tool.ruff.lint.isort]
+known-first-party = ["core", "db", "ml", "models", "routers", "schemas", "services", "utils", "tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/conftest.py" = ["E402"]  # env vars must be set before app imports
