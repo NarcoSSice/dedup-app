@@ -1,9 +1,8 @@
 import asyncio
-import os
-from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image
 
+from core.constants import MODEL_INPUT_SIZE, THUMB_SIZE
 from core.enums.image import ImageStatus
 from core.logger import logger
 from core.settings import settings
@@ -18,10 +17,6 @@ from utils.storage import storage
 class EmbeddingService:
     """Turns queued images into vectors. Run by workers, never by the API."""
 
-    def __init__(self):
-        # Pillow decode releases the GIL, so threads parallelize it
-        self.decode_pool = ThreadPoolExecutor(max_workers=os.cpu_count() or 4)
-
     async def setup(self) -> None:
         await ensure_indexes()
         # also loads the model before the first batch
@@ -32,12 +27,9 @@ class EmbeddingService:
         data = await storage.get(storage.original_key(sha256))
         if data is None:
             raise ValueError("original_missing")
-        min_side = max(settings.model.INPUT_SIZE, settings.upload.THUMB_SIZE)
-        loop = asyncio.get_running_loop()
-        img = await loop.run_in_executor(self.decode_pool, decode_image, data, min_side)
-        thumbnail = await loop.run_in_executor(
-            self.decode_pool, make_thumbnail, img, settings.upload.THUMB_SIZE
-        )
+        min_side = max(MODEL_INPUT_SIZE, THUMB_SIZE)
+        img = await asyncio.to_thread(decode_image, data, min_side)
+        thumbnail = await asyncio.to_thread(make_thumbnail, img, THUMB_SIZE)
         await storage.put(storage.thumbnail_key(sha256), thumbnail)
         return img
 
@@ -68,7 +60,7 @@ class EmbeddingService:
     async def process_batch(self, repos: RepositoryContainer) -> int:
         """Embed one batch of queued images. Returns how many were claimed."""
         claim, images = await repos.images.claim_batch(
-            settings.worker.BATCH_SIZE, settings.worker.LEASE_SECONDS
+            settings.worker.WORKER_BATCH_SIZE, settings.worker.WORKER_LEASE_SECONDS
         )
         if not images:
             return 0

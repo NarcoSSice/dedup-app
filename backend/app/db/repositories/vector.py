@@ -1,6 +1,6 @@
 from qdrant_client import AsyncQdrantClient, models
 
-from core.settings import settings
+from core.constants import QDRANT_COLLECTION
 from db.qdrant import qdrant_client
 
 
@@ -91,4 +91,4 @@ class VectorRepository:
         return [r.points for r in responses]
 
 
-vector_repository = VectorRepository(qdrant_client, settings.qdrant.COLLECTION)
+vector_repository = VectorRepository(qdrant_client, QDRANT_COLLECTION)

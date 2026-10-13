@@ -27,13 +27,13 @@ class DuplicateService:
         same request match each other, the pair is reported once, under the
         first of them."""
         request_ids = {img.id for img in images}
-        already_shown: set[int] = set()
+        already_shown: set[str] = set()
         groups = []
         for image, points in zip(images, hits, strict=True):
             if image.id in already_shown:
                 continue
             matches = [p for p in points if p.id != image.id]
-            matches = matches[: settings.duplicates.MAX_PER_IMAGE]
+            matches = matches[: settings.api.MAX_DUPLICATES_PER_IMAGE]
             if not matches:
                 continue
             groups.append(
@@ -65,6 +65,8 @@ class DuplicateService:
         response = DuplicatesResponseSchema(
             request_id=request_id,
             status=RequestStatus.done,
+            accepted=request.accepted,
+            rejected=request.rejected,
             failed=[
                 FailedImageSchema(filename=img.filename, reason=img.error)
                 for img in images
@@ -85,7 +87,7 @@ class DuplicateService:
                 threshold=threshold,
                 # ignore images uploaded after this request
                 uploaded_before=request.created_at.timestamp(),
-                limit=settings.duplicates.MAX_PER_IMAGE,
+                limit=settings.api.MAX_DUPLICATES_PER_IMAGE,
             )
             response.groups = self._build_groups(done, hits)
 

@@ -19,6 +19,7 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
+from core.constants import QDRANT_COLLECTION
 from core.settings import settings
 from db.mongo import ensure_indexes, get_database, mongo_client
 from db.qdrant import qdrant_client
@@ -41,7 +42,7 @@ async def mongo():
         await get_database().command("ping")
     except Exception:
         pytest.exit(
-            f"MongoDB is not reachable at {settings.mongo.URL}. "
+            f"MongoDB is not reachable at {settings.data.MONGO_URL}. "
             "Start it with: docker compose up -d mongo"
         )
 
@@ -50,10 +51,10 @@ async def mongo():
 async def clean_state(mongo):
     """Every test starts with empty files, database and vector collection."""
     shutil.rmtree(STORAGE_DIR, ignore_errors=True)
-    await mongo_client.drop_database(settings.mongo.DB)
+    await mongo_client.drop_database(settings.data.MONGO_DB)
     await ensure_indexes()
-    if await qdrant_client.collection_exists(settings.qdrant.COLLECTION):
-        await qdrant_client.delete_collection(settings.qdrant.COLLECTION)
+    if await qdrant_client.collection_exists(QDRANT_COLLECTION):
+        await qdrant_client.delete_collection(QDRANT_COLLECTION)
     await vector_repository.ensure_collection(embedder.dim)
 
 

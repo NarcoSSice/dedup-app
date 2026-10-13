@@ -28,10 +28,11 @@ class LocalStorage:
     def path(self, key: str) -> Path:
         return self.root / key
 
-    def exists(self, key: str) -> bool:
-        return self.path(key).is_file()
+    async def exists(self, key: str) -> bool:
+        return await asyncio.to_thread(self.path(key).is_file)
 
     async def put(self, key: str, data: bytes) -> None:
+        """No-op if the key is already stored: same key means same bytes."""
         await asyncio.to_thread(self._write_atomic, self.path(key), data)
 
     async def get(self, key: str) -> bytes | None:
@@ -45,6 +46,8 @@ class LocalStorage:
     def _write_atomic(path: Path, data: bytes) -> None:
         """Write to a temp file and rename: readers never see a half-written
         file, and concurrent writers of the same content cannot corrupt it."""
+        if path.is_file():
+            return
         path.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp = tempfile.mkstemp(dir=path.parent)
         try:
@@ -56,4 +59,4 @@ class LocalStorage:
             raise
 
 
-storage = LocalStorage(settings.storage.DIR)
+storage = LocalStorage(settings.data.STORAGE_DIR)

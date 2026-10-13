@@ -21,7 +21,7 @@ async def run() -> None:
             await asyncio.sleep(2)
         if not processed:
             # polling; Mongo change streams (replica set) could replace it
-            await asyncio.sleep(settings.worker.IDLE_SLEEP)
+            await asyncio.sleep(settings.worker.WORKER_IDLE_SLEEP)
 
 
 if __name__ == "__main__":

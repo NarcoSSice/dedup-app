@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import FileResponse
 
-from core.constants import IMAGES_ROUTE, IMMUTABLE_CACHE_HEADER
+from core.constants import IMMUTABLE_CACHE_HEADER
 from db.repositories.container import RepositoryContainer, get_repositories
 from schemas.image import UploadResponseSchema
 from services.image import ImageService
 
-router = APIRouter(prefix=IMAGES_ROUTE, tags=["Images"])
+router = APIRouter(prefix="/images", tags=["Images"])
 
 
 @router.post("", response_model=UploadResponseSchema)

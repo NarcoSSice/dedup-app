@@ -33,9 +33,9 @@ class ImageService:
     @staticmethod
     async def _check_file(file: UploadFile) -> _AcceptedFile:
         # read at most limit+1 bytes: enough to tell "too large" without loading it all
-        data = await file.read(settings.upload.MAX_FILE_BYTES + 1)
+        data = await file.read(settings.api.MAX_FILE_BYTES + 1)
         content_type = await asyncio.to_thread(
-            validate_image, data, settings.upload.MAX_FILE_BYTES
+            validate_image, data, settings.api.MAX_FILE_BYTES
         )
         return _AcceptedFile(
             filename=(file.filename or "unnamed")[:255],
@@ -47,8 +47,8 @@ class ImageService:
     async def upload_images(
         self, repos: RepositoryContainer, files: list[UploadFile]
     ) -> UploadResponseSchema:
-        if len(files) > settings.upload.MAX_FILES:
-            raise TooManyFilesException(settings.upload.MAX_FILES)
+        if len(files) > settings.api.MAX_FILES_PER_REQUEST:
+            raise TooManyFilesException(settings.api.MAX_FILES_PER_REQUEST)
 
         accepted: list[_AcceptedFile] = []
         rejected: list[RejectedFileSchema] = []
@@ -62,16 +62,12 @@ class ImageService:
                     )
                 )
 
-        # content-addressed: bytes stored by an earlier upload are not written again
-        new_files = {
-            f.sha256: f
-            for f in accepted
-            if not storage.exists(storage.original_key(f.sha256))
-        }
+        # content-addressed: put skips bytes stored by an earlier upload
+        unique = {f.sha256: f.data for f in accepted}
         await asyncio.gather(
             *(
-                storage.put(storage.original_key(f.sha256), f.data)
-                for f in new_files.values()
+                storage.put(storage.original_key(sha), data)
+                for sha, data in unique.items()
             )
         )
 
@@ -119,9 +115,9 @@ class ImageService:
 
         # thumbnail exists once a worker processed the image; fall back to original
         thumbnail_key = storage.thumbnail_key(image.sha256)
-        if thumbnail and storage.exists(thumbnail_key):
+        if thumbnail and await storage.exists(thumbnail_key):
             return storage.path(thumbnail_key), THUMBNAIL_CONTENT_TYPE
         original_key = storage.original_key(image.sha256)
-        if not storage.exists(original_key):
+        if not await storage.exists(original_key):
             raise ImageNotFoundException
         return storage.path(original_key), image.content_type

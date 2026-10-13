@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+from core.constants import MODEL_INPUT_SIZE, MODEL_URL
 from core.settings import settings
 
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
@@ -16,19 +17,15 @@ class Embedder:
     Trained specifically to match edited copies (crops, flips, compression,
     overlays) while keeping different photos of similar things apart."""
 
-    def __init__(self, model_path: str, model_url: str, input_size: int):
-        self.model_path = model_path
-        self.model_url = model_url
-        self.input_size = input_size
-
     @cached_property
     def model(self) -> torch.jit.ScriptModule:
-        if not os.path.exists(self.model_path):
-            os.makedirs(os.path.dirname(self.model_path) or ".", exist_ok=True)
-            torch.hub.download_url_to_file(self.model_url, self.model_path)
-        if settings.model.TORCH_THREADS:
-            torch.set_num_threads(settings.model.TORCH_THREADS)
-        return torch.jit.load(self.model_path, map_location="cpu").eval()
+        path = settings.worker.MODEL_PATH
+        if not os.path.exists(path):
+            os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+            torch.hub.download_url_to_file(MODEL_URL, path)
+        if settings.worker.TORCH_THREADS:
+            torch.set_num_threads(settings.worker.TORCH_THREADS)
+        return torch.jit.load(path, map_location="cpu").eval()
 
     @cached_property
     def dim(self) -> int:
@@ -36,7 +33,7 @@ class Embedder:
 
     def embed(self, images: list[Image.Image]) -> np.ndarray:
         """Batch of RGB images -> (N, D) float32 unit vectors."""
-        size = (self.input_size, self.input_size)
+        size = (MODEL_INPUT_SIZE, MODEL_INPUT_SIZE)
         # squash to a square instead of center-crop, so crops/borders stay in view
         batch = np.stack(
             [
@@ -51,4 +48,4 @@ class Embedder:
         return torch.nn.functional.normalize(vectors, dim=1).numpy()
 
 
-embedder = Embedder(settings.model.PATH, settings.model.URL, settings.model.INPUT_SIZE)
+embedder = Embedder()

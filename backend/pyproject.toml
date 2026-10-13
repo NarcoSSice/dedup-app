@@ -60,3 +60,15 @@ known-first-party = ["core", "db", "ml", "models", "routers", "schemas", "servic
 
 [tool.ruff.lint.per-file-ignores]
 "tests/conftest.py" = ["E402"]  # env vars must be set before app imports
+
+[tool.pytest.ini_options]
+pythonpath = ["app"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+filterwarnings = [
+    "ignore::FutureWarning:torch",
+    # in-memory Qdrant ignores payload indexes and HNSW params
+    "ignore:Payload indexes have no effect",
+    "ignore:Local mode performs exact",
+]

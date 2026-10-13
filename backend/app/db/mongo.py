@@ -4,11 +4,13 @@ from pymongo.asynchronous.database import AsyncDatabase
 from core.enums.image import ImageStatus
 from core.settings import settings
 
-mongo_client: AsyncMongoClient = AsyncMongoClient(settings.mongo.URL, tz_aware=True)
+mongo_client: AsyncMongoClient = AsyncMongoClient(
+    settings.data.MONGO_URL, tz_aware=True
+)
 
 
 def get_database() -> AsyncDatabase:
-    return mongo_client[settings.mongo.DB]
+    return mongo_client[settings.data.MONGO_DB]
 
 
 async def ensure_indexes() -> None:

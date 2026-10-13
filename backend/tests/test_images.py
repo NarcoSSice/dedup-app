@@ -32,13 +32,19 @@ async def test_rejects_bad_format_and_too_large(client):
         png_file("ok.png", 4),  # a valid file in the same request still goes through
     )
 
-    assert body["accepted"] == 1
-    assert body["rejected"] == [
+    expected_rejected = [
         {"filename": "doc.pdf", "reason": "unsupported_format"},
         {"filename": "fake.png", "reason": "unsupported_format"},
         {"filename": "anim.gif", "reason": "unsupported_format"},
         {"filename": "big.png", "reason": "file_too_large"},
     ]
+    assert body["accepted"] == 1
+    assert body["rejected"] == expected_rejected
+
+    # the same summary is available later by request id
+    result = (await client.get(f"/duplicates/{body['request_id']}")).json()
+    assert result["accepted"] == 1
+    assert result["rejected"] == expected_rejected
 
 
 async def test_too_many_files(client):
