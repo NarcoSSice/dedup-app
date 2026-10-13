@@ -9,7 +9,7 @@ x-backend: &backend
     MONGO_DB: ${MONGO_DB:-dedup}
     QDRANT_URL: http://qdrant:6333
     STORAGE_DIR: /data/images
-    DUPLICATE_THRESHOLD: ${DUPLICATE_THRESHOLD:-0.75}
+    DUPLICATE_THRESHOLD: ${DUPLICATE_THRESHOLD:-0.80}
   depends_on:
     mongo: { condition: service_healthy }
     qdrant: { condition: service_started }

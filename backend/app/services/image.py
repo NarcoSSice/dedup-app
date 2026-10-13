@@ -26,22 +26,25 @@ class _AcceptedFile:
     filename: str
     sha256: str
     content_type: str
-    data: bytes
 
 
 class ImageService:
     @staticmethod
-    async def _check_file(file: UploadFile) -> _AcceptedFile:
+    async def _store_file(file: UploadFile) -> _AcceptedFile:
+        """Validate and store one file right away, so a request holds at most
+        one file in memory instead of all of them."""
         # read at most limit+1 bytes: enough to tell "too large" without loading it all
         data = await file.read(settings.api.MAX_FILE_BYTES + 1)
         content_type = await asyncio.to_thread(
             validate_image, data, settings.api.MAX_FILE_BYTES
         )
+        sha256 = hashlib.sha256(data).hexdigest()
+        # content-addressed: put skips bytes stored by an earlier upload
+        await storage.put(storage.original_key(sha256), data)
         return _AcceptedFile(
             filename=(file.filename or "unnamed")[:255],
-            sha256=hashlib.sha256(data).hexdigest(),
+            sha256=sha256,
             content_type=content_type,
-            data=data,
         )
 
     async def upload_images(
@@ -54,22 +57,13 @@ class ImageService:
         rejected: list[RejectedFileSchema] = []
         for file in files:
             try:
-                accepted.append(await self._check_file(file))
+                accepted.append(await self._store_file(file))
             except InvalidImageError as e:
                 rejected.append(
                     RejectedFileSchema(
                         filename=file.filename or "unnamed", reason=e.reason
                     )
                 )
-
-        # content-addressed: put skips bytes stored by an earlier upload
-        unique = {f.sha256: f.data for f in accepted}
-        await asyncio.gather(
-            *(
-                storage.put(storage.original_key(sha), data)
-                for sha, data in unique.items()
-            )
-        )
 
         request_id = str(uuid.uuid4())
         # one timestamp for the request and all its images: orders uploads in time

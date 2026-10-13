@@ -20,7 +20,7 @@ class DataConfig(BaseConfig):
 
 class ApiConfig(BaseConfig):
     # calibrated on UKBench for SSCD, see CALIBRATION.md
-    DUPLICATE_THRESHOLD: float = Field(0.75, ge=0, le=1)
+    DUPLICATE_THRESHOLD: float = Field(0.80, ge=0, le=1)
     MAX_DUPLICATES_PER_IMAGE: int = 50
     MAX_FILE_BYTES: int = 10 * 1024 * 1024
     MAX_FILES_PER_REQUEST: int = 50

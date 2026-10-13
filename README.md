@@ -4,7 +4,7 @@
 
 ## Model and threshold choice
 
-The **SSCD** model and the **0.75** threshold were chosen by testing on real photos (the UKBench dataset) against the models suggested in the task: DINOv2, EfficientNet, ResNet, ViT and CLIP. SSCD separates real copies from different photos of the same object better than any of them. Data, methodology and full results are in [CALIBRATION.md](CALIBRATION.md).
+The **SSCD** model and the **0.80** threshold were chosen by testing on real photos (the UKBench dataset) against the models suggested in the task: DINOv2, EfficientNet, ResNet, ViT and CLIP. SSCD separates real copies from different photos of the same object better than any of them. Data, methodology and full results are in [CALIBRATION.md](CALIBRATION.md).
 
 ## Deviations from the task
 
