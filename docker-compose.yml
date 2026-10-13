@@ -50,6 +50,7 @@ services:
 
   qdrant:
     image: qdrant/qdrant:v1.19.2
+    ports: ["127.0.0.1:6333:6333"]  # for running the backend from the host
     volumes: [qdrant:/qdrant/storage]
 
 volumes:

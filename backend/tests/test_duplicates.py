@@ -65,15 +65,18 @@ async def test_pair_within_one_request_reported_once(client, process_queue):
     ] == [("a.png", ["a.jpg"])]
 
 
-async def test_ignores_images_uploaded_later(client, process_queue):
+async def test_finds_images_uploaded_later(client, process_queue):
     original = make_image(25)
     first = await upload(client, ("a.png", to_bytes(original), "image/png"))
-    await upload(client, ("a.jpg", to_bytes(original, "JPEG"), "image/jpeg"))
+    second = await upload(client, ("a.jpg", to_bytes(original, "JPEG"), "image/jpeg"))
     await process_queue()
 
     body = (await client.get(f"/duplicates/{first['request_id']}")).json()
 
-    assert body["groups"] == []
+    [group] = body["groups"]
+    assert [(d["filename"], d["source_request_id"]) for d in group["duplicates"]] == [
+        ("a.jpg", second["request_id"])
+    ]
 
 
 async def test_no_false_duplicate(client, process_queue):

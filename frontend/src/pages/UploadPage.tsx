@@ -47,7 +47,7 @@ export function UploadPage() {
         <CardHeader>
           <CardTitle>Find duplicate images</CardTitle>
           <CardDescription>
-            Uploaded images are compared with each other and with everything uploaded before.
+            Uploaded images are compared with each other and with all images uploaded so far.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

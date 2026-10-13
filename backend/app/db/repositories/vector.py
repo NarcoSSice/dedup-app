@@ -36,10 +36,6 @@ class VectorRepository:
                 ),
             ),
         )
-        # upload time, lets a search ignore images added after the request
-        await self.client.create_payload_index(
-            self.collection, "uploaded_at", models.PayloadSchemaType.FLOAT
-        )
 
     async def upsert(
         self, ids: list[str], vectors: list[list[float]], payloads: list[dict]
@@ -61,21 +57,12 @@ class VectorRepository:
         self,
         vectors: list[list[float]],
         threshold: float,
-        uploaded_before: float,
         limit: int,
     ) -> list[list[models.ScoredPoint]]:
         """Nearest neighbours for all vectors in a single round-trip."""
-        time_filter = models.Filter(
-            must=[
-                models.FieldCondition(
-                    key="uploaded_at", range=models.Range(lte=uploaded_before)
-                )
-            ]
-        )
         requests = [
             models.QueryRequest(
                 query=vector,
-                filter=time_filter,
                 score_threshold=threshold,
                 limit=limit + 1,  # +1 for the image itself
                 with_payload=True,

@@ -86,8 +86,6 @@ class DuplicateService:
             hits = await vector_repository.search_many(
                 [vectors[img.id] for img in done],
                 threshold=threshold,
-                # ignore images uploaded after this request
-                uploaded_before=request.created_at.timestamp(),
                 limit=settings.api.MAX_DUPLICATES_PER_IMAGE,
             )
             response.groups = self._build_groups(done, hits)

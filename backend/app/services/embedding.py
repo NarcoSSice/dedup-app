@@ -81,7 +81,6 @@ class EmbeddingService:
                 vectors=[vectors[img.sha256] for img in embedded],
                 payloads=[
                     {
-                        "uploaded_at": img.created_at.timestamp(),
                         "request_id": img.request_id,
                         "filename": img.filename,
                     }
