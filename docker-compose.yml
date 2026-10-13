@@ -33,6 +33,12 @@ services:
       TORCH_THREADS: ${TORCH_THREADS:-4}
       WORKER_BATCH_SIZE: ${WORKER_BATCH_SIZE:-32}
 
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports: ["3000:80"]
+    depends_on: [api]
+
   mongo:
     image: mongo:8.0.15
     ports: ["27017:27017"]  # for running tests from the host
