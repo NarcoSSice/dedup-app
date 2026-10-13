@@ -9,25 +9,20 @@ import { ThresholdSlider } from '@/components/ThresholdSlider'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useGetDuplicatesQuery } from '@/lib/api'
 import { errorMessage, errorStatus } from '@/lib/api-errors'
-import { DEFAULT_THRESHOLD, POLL_INTERVAL_MS } from '@/lib/constants'
+import { DEFAULT_THRESHOLD } from '@/lib/constants'
 import { saveRecentRequest } from '@/lib/history'
-import { useGetDuplicatesQuery } from '@/store/api'
 
 export function RequestPage() {
   const { requestId = '' } = useParams()
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD)
-  const [pollingInterval, setPollingInterval] = useState(POLL_INTERVAL_MS)
 
   const debouncedThreshold = useDebounce(threshold, 300)
   const { data, error, isLoading, isFetching, refetch } = useGetDuplicatesQuery(
-    { requestId, threshold: debouncedThreshold },
-    { pollingInterval }
+    requestId,
+    debouncedThreshold
   )
-
-  useEffect(() => {
-    setPollingInterval(data?.status === 'processing' && !error ? POLL_INTERVAL_MS : 0)
-  }, [data?.status, error])
 
   useEffect(() => {
     if (!data) return

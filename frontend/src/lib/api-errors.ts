@@ -1,20 +1,23 @@
-import type { SerializedError } from '@reduxjs/toolkit'
-import type { FetchBaseQueryError } from '@reduxjs/toolkit/query'
-
 import { MAX_FILE_BYTES, MAX_FILES } from '@/lib/constants'
 
-type ApiError = FetchBaseQueryError | SerializedError | undefined
+export class ApiError extends Error {
+  readonly status: number
+  readonly detail: unknown
 
-export function errorStatus(error: ApiError): number | undefined {
-  if (!error || !('status' in error)) return undefined
-  if (typeof error.status === 'number') return error.status
-  if (error.status === 'PARSING_ERROR') return error.originalStatus
-  return undefined
+  constructor(status: number, detail: unknown) {
+    super(`HTTP ${status}`)
+    this.status = status
+    this.detail = detail
+  }
 }
 
-export function errorMessage(error: ApiError): string {
-  if (!error) return 'Something went wrong'
-  if ('status' in error && error.status === 'FETCH_ERROR') {
+export function errorStatus(error: Error | null): number | undefined {
+  return error instanceof ApiError ? error.status : undefined
+}
+
+export function errorMessage(error: Error | null): string {
+  // fetch rejects with a TypeError when the server cannot be reached at all
+  if (error instanceof TypeError) {
     return 'Server is unreachable. Check that the backend is running and try again.'
   }
 
@@ -29,8 +32,6 @@ export function errorMessage(error: ApiError): string {
   }
   if (status && status >= 500) return 'Server error. Try again later.'
 
-  if ('data' in error && typeof error.data === 'object' && error.data && 'detail' in error.data) {
-    return String(error.data.detail)
-  }
+  if (error instanceof ApiError && error.detail) return String(error.detail)
   return 'Something went wrong'
 }

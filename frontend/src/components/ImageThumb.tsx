@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { imageUrl } from '@/store/api'
+import { imageUrl } from '@/lib/api'
 
 interface Props {
   imageId: string
