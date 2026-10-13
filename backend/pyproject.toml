@@ -48,15 +48,11 @@ dev = [
 ]
 
 [tool.ruff]
-src = ["app"]
-extend-exclude = ["app/db/migrations"]
+src = ["app", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["B008"]  # FastAPI: Depends()/File() in argument defaults
-
-[tool.ruff.lint.isort]
-known-first-party = ["core", "db", "ml", "models", "routers", "schemas", "services", "utils", "tests"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/conftest.py" = ["E402"]  # env vars must be set before app imports

@@ -41,7 +41,7 @@ services:
 
   mongo:
     image: mongo:8.0.15
-    ports: ["27017:27017"]  # for running tests from the host
+    ports: ["127.0.0.1:27017:27017"]  # for running the backend from the host
     volumes: [mongo:/data/db]
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]

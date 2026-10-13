@@ -48,3 +48,9 @@ def to_bytes(img: Image.Image, image_format: str = "PNG", **kwargs) -> bytes:
 
 def png_file(filename: str, seed: int) -> tuple[str, bytes, str]:
     return filename, to_bytes(make_image(seed)), "image/png"
+
+
+async def upload(client, *files) -> dict:
+    response = await client.post("/images", files=[("files", f) for f in files])
+    assert response.status_code == 200, response.text
+    return response.json()

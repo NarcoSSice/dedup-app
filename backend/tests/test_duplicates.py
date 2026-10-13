@@ -1,8 +1,7 @@
 import uuid
 
 from core.constants import NO_DUPLICATES_MESSAGE
-from tests.test_images import upload
-from tests.utils import make_image, png_file, to_bytes
+from tests.utils import make_image, png_file, to_bytes, upload
 
 
 async def test_finds_resized_and_compressed_duplicate(client, process_queue):

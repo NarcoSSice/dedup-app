@@ -12,9 +12,8 @@ class BaseDocument(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    id: str = Field(alias="_id")
+    created_at: datetime = Field(default_factory=utcnow)
+
     def to_mongo(self) -> dict:
         return self.model_dump(by_alias=True, exclude_none=True)
-
-
-class TimestampMixin(BaseModel):
-    created_at: datetime = Field(default_factory=utcnow)

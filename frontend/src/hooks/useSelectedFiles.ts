@@ -9,7 +9,6 @@ export interface SelectedFile {
   error: string | null
 }
 
-/** Files picked for upload, validated on the client like the backend does. */
 export function useSelectedFiles() {
   const [selected, setSelected] = useState<SelectedFile[]>([])
 

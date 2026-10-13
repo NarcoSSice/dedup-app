@@ -10,7 +10,6 @@ interface Props {
   requestId: string
 }
 
-/** The uploaded image on the left, its duplicates with similarity scores on the right. */
 export function DuplicateGroupCard({ group, requestId }: Props) {
   return (
     <Card>

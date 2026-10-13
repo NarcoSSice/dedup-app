@@ -10,4 +10,4 @@ export const MIN_THRESHOLD = 0.5
 export const POLL_INTERVAL_MS = 1000
 export const RECENT_REQUESTS_LIMIT = 10
 
-export const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+export const API_URL = '/api'

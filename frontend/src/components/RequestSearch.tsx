@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-/** Opens the results of an earlier request by its ID. */
 export function RequestSearch() {
   const [requestId, setRequestId] = useState('')
   const navigate = useNavigate()

@@ -1,6 +1,6 @@
 import { Loader2Icon, UploadIcon } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { toast } from 'sonner'
 
 import { ApiErrorAlert } from '@/components/ApiErrorAlert'
 import { FilePreviewGrid } from '@/components/FilePreviewGrid'
@@ -15,30 +15,26 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { useRecentRequests } from '@/hooks/useRecentRequests'
 import { useSelectedFiles } from '@/hooks/useSelectedFiles'
 import { errorMessage } from '@/lib/api-errors'
 import { MAX_FILES } from '@/lib/constants'
+import { loadRecentRequests } from '@/lib/history'
 import { useUploadImagesMutation } from '@/store/api'
 
 export function UploadPage() {
   const { selected, valid, tooMany, addFiles, removeFile, clear } = useSelectedFiles()
   const [uploadImages, { isLoading, error, reset }] = useUploadImagesMutation()
-  const { recent } = useRecentRequests()
+  const [recent] = useState(loadRecentRequests)
   const navigate = useNavigate()
 
   const invalidCount = selected.length - valid.length
   const canUpload = valid.length > 0 && !tooMany && !isLoading
 
   const upload = async () => {
-    try {
-      const result = await uploadImages(valid.map((s) => s.file)).unwrap()
-      toast.success(`Uploaded: ${result.accepted} accepted, ${result.rejected.length} rejected`)
-      clear()
-      navigate(`/requests/${result.request_id}`)
-    } catch (e) {
-      toast.error(errorMessage(e as Parameters<typeof errorMessage>[0]))
-    }
+    const { data } = await uploadImages(valid.map((s) => s.file))
+    if (!data) return // the error alert below shows why
+    clear()
+    navigate(`/requests/${data.request_id}`)
   }
 
   return (

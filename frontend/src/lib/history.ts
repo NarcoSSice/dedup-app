@@ -20,7 +20,7 @@ export function loadRecentRequests(): RecentRequest[] {
   }
 }
 
-export function saveRecentRequest(request: RecentRequest): RecentRequest[] {
+export function saveRecentRequest(request: RecentRequest): void {
   const updated = [
     request,
     ...loadRecentRequests().filter((r) => r.requestId !== request.requestId),
@@ -30,5 +30,4 @@ export function saveRecentRequest(request: RecentRequest): RecentRequest[] {
   } catch {
     // ignore, see above
   }
-  return updated
 }

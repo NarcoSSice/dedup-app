@@ -8,7 +8,6 @@ interface Props {
   filename: string
 }
 
-/** Thumbnail that opens the full-size original on click. */
 export function ImageThumb({ imageId, filename }: Props) {
   const [failed, setFailed] = useState(false)
 

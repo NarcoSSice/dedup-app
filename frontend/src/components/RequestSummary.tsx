@@ -7,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { REJECT_REASON_LABELS } from '@/lib/files'
 import type { DuplicatesResponse } from '@/types/api'
 
-/** Request ID, processing state and what happened to every uploaded file. */
 export function RequestSummary({ result }: { result: DuplicatesResponse }) {
   const processing = result.status === 'processing'
   const notProcessed = [

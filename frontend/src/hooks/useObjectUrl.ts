@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 
-/** Local preview URL for a picked file, revoked when the file goes away. */
 export function useObjectUrl(file: File): string | undefined {
   const [url, setUrl] = useState<string>()
 

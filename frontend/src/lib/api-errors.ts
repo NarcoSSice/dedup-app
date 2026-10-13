@@ -5,7 +5,6 @@ import { MAX_FILE_BYTES, MAX_FILES } from '@/lib/constants'
 
 type ApiError = FetchBaseQueryError | SerializedError | undefined
 
-/** HTTP status of a failed request; also for non-JSON bodies (e.g. nginx error pages). */
 export function errorStatus(error: ApiError): number | undefined {
   if (!error || !('status' in error)) return undefined
   if (typeof error.status === 'number') return error.status

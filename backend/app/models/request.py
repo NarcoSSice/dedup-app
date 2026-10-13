@@ -1,9 +1,7 @@
-from pydantic import Field
+from models.base import BaseDocument
+from schemas.image import RejectedFileSchema
 
-from models.base import BaseDocument, TimestampMixin
 
-
-class RequestDocument(BaseDocument, TimestampMixin):
-    id: str = Field(alias="_id")
+class RequestDocument(BaseDocument):
     accepted: int
-    rejected: list[dict] = []
+    rejected: list[RejectedFileSchema] = []

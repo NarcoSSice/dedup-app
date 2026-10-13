@@ -13,7 +13,8 @@ from core.exceptions.image import (
     TooManyFilesException,
 )
 from core.settings import settings
-from db.repositories.container import RepositoryContainer
+from db.repositories.image import image_repository
+from db.repositories.request import request_repository
 from models import ImageDocument, RequestDocument
 from models.base import utcnow
 from schemas.image import RejectedFileSchema, UploadResponseSchema
@@ -47,9 +48,7 @@ class ImageService:
             content_type=content_type,
         )
 
-    async def upload_images(
-        self, repos: RepositoryContainer, files: list[UploadFile]
-    ) -> UploadResponseSchema:
+    async def upload_images(self, files: list[UploadFile]) -> UploadResponseSchema:
         if len(files) > settings.api.MAX_FILES_PER_REQUEST:
             raise TooManyFilesException(settings.api.MAX_FILES_PER_REQUEST)
 
@@ -69,7 +68,7 @@ class ImageService:
         # one timestamp for the request and all its images: orders uploads in time
         uploaded_at = utcnow()
         # images first, request last: GET /duplicates only sees complete requests
-        await repos.images.create_many(
+        await image_repository.create_many(
             [
                 ImageDocument(
                     id=str(uuid.uuid4()),
@@ -83,11 +82,11 @@ class ImageService:
                 for position, f in enumerate(accepted)
             ]
         )
-        await repos.requests.create(
+        await request_repository.create(
             RequestDocument(
                 id=request_id,
                 accepted=len(accepted),
-                rejected=[r.model_dump(mode="json") for r in rejected],
+                rejected=rejected,
                 created_at=uploaded_at,
             )
         )
@@ -96,14 +95,12 @@ class ImageService:
             request_id=request_id, accepted=len(accepted), rejected=rejected
         )
 
-    async def get_image(
-        self, repos: RepositoryContainer, image_id: str, thumbnail: bool
-    ) -> tuple[Path, str]:
+    async def get_image(self, image_id: str, thumbnail: bool) -> tuple[Path, str]:
         """-> (file path, content type)"""
         internal_id = parse_public_id(image_id)
         if internal_id is None:
             raise ImageNotFoundException
-        image = await repos.images.get_by_id(internal_id)
+        image = await image_repository.get_by_id(internal_id)
         if image is None:
             raise ImageNotFoundException
 

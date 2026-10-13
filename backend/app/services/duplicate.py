@@ -4,7 +4,8 @@ from core.constants import NO_DUPLICATES_MESSAGE
 from core.enums.image import ImageStatus, RequestStatus
 from core.exceptions.request import RequestNotFoundException
 from core.settings import settings
-from db.repositories.container import RepositoryContainer
+from db.repositories.image import image_repository
+from db.repositories.request import request_repository
 from db.repositories.vector import vector_repository
 from models import ImageDocument
 from schemas.duplicate import (
@@ -55,12 +56,12 @@ class DuplicateService:
         return groups
 
     async def get_duplicates(
-        self, repos: RepositoryContainer, request_id: str, threshold: float
+        self, request_id: str, threshold: float
     ) -> DuplicatesResponseSchema:
-        request = await repos.requests.get_by_id(request_id)
+        request = await request_repository.get_by_id(request_id)
         if request is None:
             raise RequestNotFoundException
-        images = await repos.images.get_request_images(request_id)
+        images = await image_repository.get_request_images(request_id)
 
         response = DuplicatesResponseSchema(
             request_id=request_id,

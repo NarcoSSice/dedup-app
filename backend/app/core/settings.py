@@ -1,13 +1,9 @@
-import os
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class BaseConfig(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=os.getenv("ENV_FILE", ".env"), extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 class DataConfig(BaseConfig):
@@ -44,7 +40,6 @@ class AppSettings(BaseConfig):
     PORT: int = 8000
     RELOAD: bool = False
     WORKERS: int = 1
-    ALLOW_ORIGINS: list[str] = ["*"]
     LOG_LEVEL: str = "INFO"
 
     data: DataConfig = DataConfig()

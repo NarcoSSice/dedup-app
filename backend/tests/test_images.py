@@ -1,15 +1,9 @@
 import os
 import uuid
 
-from db.repositories.container import get_repositories
-from tests.utils import make_image, png_file, to_bytes
+from db.repositories.image import image_repository
+from tests.utils import make_image, png_file, to_bytes, upload
 from utils.image_utils import to_public_id
-
-
-async def upload(client, *files):
-    response = await client.post("/images", files=[("files", f) for f in files])
-    assert response.status_code == 200, response.text
-    return response.json()
 
 
 async def test_upload_images(client):
@@ -59,7 +53,7 @@ async def test_get_image_and_thumbnail(client, process_queue):
     data = to_bytes(make_image(40))
     body = await upload(client, ("x.png", data, "image/png"))
     await process_queue()
-    [image] = await get_repositories().images.get_request_images(body["request_id"])
+    [image] = await image_repository.get_request_images(body["request_id"])
     url = f"/images/{to_public_id(image.id)}"
 
     original = await client.get(url)

@@ -9,9 +9,9 @@ import { ThresholdSlider } from '@/components/ThresholdSlider'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDebounce } from '@/hooks/useDebounce'
-import { useRecentRequests } from '@/hooks/useRecentRequests'
 import { errorMessage, errorStatus } from '@/lib/api-errors'
 import { DEFAULT_THRESHOLD, POLL_INTERVAL_MS } from '@/lib/constants'
+import { saveRecentRequest } from '@/lib/history'
 import { useGetDuplicatesQuery } from '@/store/api'
 
 export function RequestPage() {
@@ -24,7 +24,6 @@ export function RequestPage() {
     { requestId, threshold: debouncedThreshold },
     { pollingInterval }
   )
-  const { addRecent } = useRecentRequests()
 
   useEffect(() => {
     setPollingInterval(data?.status === 'processing' && !error ? POLL_INTERVAL_MS : 0)
@@ -32,7 +31,7 @@ export function RequestPage() {
 
   useEffect(() => {
     if (!data) return
-    addRecent({
+    saveRecentRequest({
       requestId: data.request_id,
       openedAt: new Date().toISOString(),
       accepted: data.accepted,

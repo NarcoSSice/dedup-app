@@ -8,7 +8,6 @@ export const REJECT_REASON_LABELS: Record<RejectReason, string> = {
   empty_file: 'Empty file',
 }
 
-/** Client-side check mirroring the backend; returns an error message or null. */
 export function validateFile(file: File): string | null {
   if (!ACCEPTED_TYPES.includes(file.type)) return REJECT_REASON_LABELS.unsupported_format
   if (file.size > MAX_FILE_BYTES) return REJECT_REASON_LABELS.file_too_large

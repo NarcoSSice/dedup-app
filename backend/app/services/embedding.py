@@ -7,7 +7,7 @@ from core.enums.image import ImageStatus
 from core.logger import logger
 from core.settings import settings
 from db.mongo import ensure_indexes
-from db.repositories.container import RepositoryContainer
+from db.repositories.image import ImageResult, image_repository
 from db.repositories.vector import vector_repository
 from ml.embedder import embedder
 from utils.image_utils import decode_image, make_thumbnail
@@ -57,9 +57,9 @@ class EmbeddingService:
         }
         return embedded, errors
 
-    async def process_batch(self, repos: RepositoryContainer) -> int:
+    async def process_batch(self) -> int:
         """Embed one batch of queued images. Returns how many were claimed."""
-        claim, images = await repos.images.claim_batch(
+        claim, images = await image_repository.claim_batch(
             settings.worker.WORKER_BATCH_SIZE, settings.worker.WORKER_LEASE_SECONDS
         )
         if not images:
@@ -67,7 +67,7 @@ class EmbeddingService:
 
         # exact byte copies reuse the stored vector instead of running the model
         hashes = {img.sha256 for img in images}
-        known_ids = await repos.images.get_done_ids_by_hash(hashes)
+        known_ids = await image_repository.get_done_ids_by_hash(hashes)
         stored = await vector_repository.get_vectors(list(known_ids.values()))
         vectors = {sha: stored[pk] for sha, pk in known_ids.items() if pk in stored}
 
@@ -88,16 +88,14 @@ class EmbeddingService:
                     for img in embedded
                 ],
             )
-        await repos.images.finish_batch(
+        await image_repository.finish_batch(
             claim,
             [
-                {
-                    "id": img.id,
-                    "status": ImageStatus.done
-                    if img.sha256 in vectors
-                    else ImageStatus.failed,
-                    "error": errors.get(img.sha256),
-                }
+                ImageResult(
+                    img.id,
+                    ImageStatus.done if img.sha256 in vectors else ImageStatus.failed,
+                    errors.get(img.sha256),
+                )
                 for img in images
             ],
         )

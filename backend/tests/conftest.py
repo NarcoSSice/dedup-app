@@ -7,6 +7,8 @@ STORAGE_DIR = tempfile.mkdtemp(prefix="dedup-test-")
 
 # must be set before app modules read settings
 os.environ.update(
+    # separate instance from docker-compose.test.yml, never the app database
+    MONGO_URL="mongodb://localhost:27018",
     MONGO_DB="dedup_test",
     QDRANT_URL=":memory:",
     STORAGE_DIR=STORAGE_DIR,
@@ -23,7 +25,6 @@ from core.constants import QDRANT_COLLECTION
 from core.settings import settings
 from db.mongo import ensure_indexes, get_database, mongo_client
 from db.qdrant import qdrant_client
-from db.repositories.container import get_repositories
 from db.repositories.vector import vector_repository
 from main import app
 from ml.embedder import embedder
@@ -43,7 +44,7 @@ async def mongo():
     except Exception:
         pytest.exit(
             f"MongoDB is not reachable at {settings.data.MONGO_URL}. "
-            "Start it with: docker compose up -d mongo"
+            "Start it with: docker compose -f docker-compose.test.yml up -d"
         )
 
 
@@ -76,7 +77,7 @@ def process_queue(embedding_service):
     """Run the worker synchronously until the queue is empty."""
 
     async def _process():
-        while await embedding_service.process_batch(get_repositories()):
+        while await embedding_service.process_batch():
             pass
 
     return _process

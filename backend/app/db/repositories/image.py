@@ -1,12 +1,22 @@
 import uuid
 from datetime import timedelta
+from typing import NamedTuple
 
 from pymongo import UpdateOne
 
 from core.enums.image import ImageStatus
+from db.mongo import get_database
 from db.repositories.base import BaseRepository
 from models import ImageDocument
 from models.base import utcnow
+
+
+class ImageResult(NamedTuple):
+    """Outcome of one claimed image, written back by finish_batch."""
+
+    id: str
+    status: ImageStatus
+    error: str | None = None
 
 
 class ImageRepository(BaseRepository[ImageDocument]):
@@ -54,7 +64,7 @@ class ImageRepository(BaseRepository[ImageDocument]):
         }
         candidates = (
             await self.collection.find(claimable, {"_id": 1})
-            .sort("created_at")  # FIFO
+            .sort("created_at")
             .limit(limit)
             .to_list()
         )
@@ -74,15 +84,15 @@ class ImageRepository(BaseRepository[ImageDocument]):
         )
         return claim, await self.find({"claim": claim})
 
-    async def finish_batch(self, claim: str, results: list[dict]) -> None:
-        """results: [{"id", "status", "error"}]. Matching on the claim token means a
-        worker whose lease expired cannot overwrite the new owner's result."""
+    async def finish_batch(self, claim: str, results: list[ImageResult]) -> None:
+        """Matching on the claim token means a worker whose lease expired cannot
+        overwrite the new owner's result."""
         await self.collection.bulk_write(
             [
                 UpdateOne(
-                    {"_id": r["id"], "claim": claim},
+                    {"_id": r.id, "claim": claim},
                     {
-                        "$set": {"status": r["status"], "error": r["error"]},
+                        "$set": {"status": r.status, "error": r.error},
                         "$unset": {"claim": "", "claimed_at": ""},
                     },
                 )
@@ -90,3 +100,6 @@ class ImageRepository(BaseRepository[ImageDocument]):
             ],
             ordered=False,
         )
+
+
+image_repository = ImageRepository(get_database())

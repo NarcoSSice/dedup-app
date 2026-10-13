@@ -4,7 +4,6 @@ import asyncio
 
 from core.logger import logger
 from core.settings import settings
-from db.repositories.container import get_repositories
 from services.embedding import EmbeddingService
 
 
@@ -14,7 +13,7 @@ async def run() -> None:
     logger.info("worker ready")
     while True:
         try:
-            processed = await service.process_batch(get_repositories())
+            processed = await service.process_batch()
         except Exception:
             logger.exception("batch failed, images return to the queue after the lease")
             processed = 0
