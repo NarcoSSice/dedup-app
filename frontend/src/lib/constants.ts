@@ -5,7 +5,7 @@ export const ACCEPTED_TYPES = ['image/jpeg', 'image/png']
 
 // Backend default (DUPLICATE_THRESHOLD); the slider starts here.
 export const DEFAULT_THRESHOLD = 0.8
-export const MIN_THRESHOLD = 0.5
+export const MIN_THRESHOLD = 0
 
 export const POLL_INTERVAL_MS = 1000
 export const RECENT_REQUESTS_LIMIT = 10

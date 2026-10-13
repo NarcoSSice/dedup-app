@@ -10,9 +10,7 @@ x-backend: &backend
     QDRANT_URL: http://qdrant:6333
     STORAGE_DIR: /data/images
     DUPLICATE_THRESHOLD: ${DUPLICATE_THRESHOLD:-0.80}
-  depends_on:
-    mongo: { condition: service_healthy }
-    qdrant: { condition: service_started }
+  depends_on: [mongo, qdrant]
 
 services:
   api:
@@ -43,10 +41,6 @@ services:
     image: mongo:8.0.15
     ports: ["127.0.0.1:27017:27017"]  # for running the backend from the host
     volumes: [mongo:/data/db]
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
-      interval: 2s
-      retries: 30
 
   qdrant:
     image: qdrant/qdrant:v1.19.2
